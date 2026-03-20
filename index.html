@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html dir="rtl" lang="ar">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>تطبيق قائمة الحضور</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f4f7f6;
+            color: #333;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        h1, h2 { text-align: center; }
+        .controls {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+        input, select, button {
+            padding: 10px;
+            font-size: 16px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+        }
+        button {
+            background-color: #007bff;
+            color: white;
+            cursor: pointer;
+            border: none;
+            transition: 0.3s;
+        }
+        button:hover { background-color: #0056b3; }
+        .btn-copy {
+            background-color: #28a745;
+            width: 100%;
+            font-size: 18px;
+            margin-top: 20px;
+        }
+        .btn-copy:hover { background-color: #218838; }
+        
+        .columns {
+            display: flex;
+            gap: 20px;
+        }
+        @media (max-width: 768px) {
+            .columns { flex-direction: column; }
+        }
+        .column {
+            flex: 1;
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        .student-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: #f9f9f9;
+            padding: 10px;
+            margin-bottom: 8px;
+            border-radius: 4px;
+            border: 1px solid #eee;
+        }
+        .student-actions button {
+            padding: 5px 8px;
+            font-size: 12px;
+            margin-right: 5px;
+            border-radius: 3px;
+        }
+        .btn-present { background-color: #28a745; }
+        .btn-unexcused { background-color: #dc3545; }
+        .btn-excused { background-color: #ffc107; color: black; }
+        .btn-delete { background-color: #6c757d; }
+    </style>
+</head>
+<body>
+
+    <h1>📝 إدارة قائمة الحضور</h1>
+
+    <div class="controls">
+        <select id="daySelect">
+            <option value="الإثنين">الإثنين</option>
+            <option value="الثلاثاء" selected>الثلاثاء</option>
+            <option value="الأربعاء">الأربعاء</option>
+            <option value="الخميس">الخميس</option>
+            <option value="الجمعة">الجمعة</option>
+            <option value="السبت">السبت</option>
+            <option value="الأحد">الأحد</option>
+        </select>
+        
+        <input type="text" id="newStudentName" placeholder="اسم التلميذ الجديد...">
+        <button onclick="addStudent()">➕ إضافة تلميذ</button>
+    </div>
+
+    <div class="columns">
+        <div class="column" id="col-present">
+            <h2>💎 الحضور 💎</h2>
+            <div id="list-present"></div>
+        </div>
+        <div class="column" id="col-unexcused">
+            <h2>⛔️ غياب بدون عذر ⛔️</h2>
+            <div id="list-unexcused"></div>
+        </div>
+        <div class="column" id="col-excused">
+            <h2>غياب بعذر</h2>
+            <div id="list-excused"></div>
+        </div>
+    </div>
+
+    <button class="btn-copy" onclick="copyList()">📋 نسخ القائمة للمشاركة</button>
+
+    <script>
+        // Default list of students
+        const defaultStudents = [
+            { name: "حمزة المجدوب", status: "present" }, { name: "عمر دمق", status: "present" },
+            { name: "مجد بن عمر", status: "present" }, { name: "يوسف غراب", status: "present" },
+            { name: "أويس الخراط", status: "present" }, { name: "محمد أمين قاسم", status: "present" },
+            { name: "أحمد الجوة", status: "excused" }, { name: "محمد كريشان", status: "excused" },
+            { name: "آدم قودان", status: "excused" }, { name: "آدم بودية", status: "excused" },
+            { name: "يحيى المنيف", status: "excused" }, { name: "أحمد غراب", status: "excused" },
+            { name: "محمد أمين الزغل", status: "excused" }, { name: "عبد الرحمان الطريقي", status: "excused" },
+            { name: "أنس", status: "excused" }, { name: "آدم الرقي", status: "excused" },
+            { name: "محمد علي حاج سليمان", status: "excused" }, { name: "أحمد المنيف", status: "excused" },
+            { name: "يوسف القلال", status: "excused" }, { name: "محمد أمين اللوز", status: "excused" },
+            { name: "راسم عبيد", status: "excused" }, { name: "محمد الزغل", status: "excused" }
+        ];
+
+        // Load from LocalStorage or use default
+        let students = JSON.parse(localStorage.getItem("studentsList")) || defaultStudents;
+
+        function saveAndRender() {
+            localStorage.setItem("studentsList", JSON.stringify(students));
+            renderLists();
+        }
+
+        function renderLists() {
+            document.getElementById("list-present").innerHTML = "";
+            document.getElementById("list-unexcused").innerHTML = "";
+            document.getElementById("list-excused").innerHTML = "";
+
+            students.forEach((student, index) => {
+                const div = document.createElement("div");
+                div.className = "student-item";
+                
+                // Determine which buttons to show based on current status
+                let buttons = "";
+                if(student.status !== "present") buttons += `<button class="btn-present" onclick="changeStatus(${index}, 'present')">حضور</button>`;
+                if(student.status !== "unexcused") buttons += `<button class="btn-unexcused" onclick="changeStatus(${index}, 'unexcused')">بدون عذر</button>`;
+                if(student.status !== "excused") buttons += `<button class="btn-excused" onclick="changeStatus(${index}, 'excused')">بعذر</button>`;
+                buttons += `<button class="btn-delete" onclick="deleteStudent(${index})">🗑️</button>`;
+
+                div.innerHTML = `<span>${student.name}</span> <div class="student-actions">${buttons}</div>`;
+                
+                document.getElementById(`list-${student.status}`).appendChild(div);
+            });
+        }
+
+        function addStudent() {
+            const nameInput = document.getElementById("newStudentName");
+            const name = nameInput.value.trim();
+            if (name) {
+                students.push({ name: name, status: "present" });
+                nameInput.value = "";
+                saveAndRender();
+            }
+        }
+
+        function deleteStudent(index) {
+            if(confirm("هل أنت متأكد من حذف هذا التلميذ؟")) {
+                students.splice(index, 1);
+                saveAndRender();
+            }
+        }
+
+        function changeStatus(index, newStatus) {
+            students[index].status = newStatus;
+            saveAndRender();
+        }
+
+        function copyList() {
+            const day = document.getElementById("daySelect").value;
+            
+            const present = students.filter(s => s.status === "present").map(s => s.name).join("\n");
+            const unexcused = students.filter(s => s.status === "unexcused").map(s => s.name).join("\n");
+            const excused = students.filter(s => s.status === "excused").map(s => s.name).join("\n");
+
+            const finalText = `💎 قائمة الحضور اليوم ${day} 💎\n\n${present}\n\n⛔️غيابات بدون عذر ⛔️\n\n${unexcused}\n\nغيابات بعذر\n\n${excused}`;
+
+            navigator.clipboard.writeText(finalText).then(() => {
+                alert("تم نسخ القائمة بنجاح! يمكنك الآن لصقها في المجموعة.");
+            }).catch(err => {
+                alert("حدث خطأ أثناء النسخ.");
+            });
+        }
+
+        // Initial render
+        renderLists();
+    </script>
+</body>
+</html>
