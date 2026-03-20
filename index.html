@@ -1,0 +1,406 @@
+<!DOCTYPE html>
+<html dir="rtl" lang="ar">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <title>الحضور</title>
+    <style>
+        :root {
+            --bg-color: #f2f2f7;
+            --card-bg: #ffffff;
+            --primary: #007aff;
+            --success: #34c759;
+            --danger: #ff3b30;
+            --warning: #ffcc00;
+            --text-main: #1c1c1e;
+            --text-muted: #8e8e93;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px 15px 120px 15px;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        h1 {
+            text-align: center;
+            font-size: 24px;
+            font-weight: 700;
+            margin-bottom: 20px;
+        }
+
+        h2 {
+            font-size: 18px;
+            color: var(--text-muted);
+            margin-bottom: 10px;
+            border-bottom: 1px solid #e5e5ea;
+            padding-bottom: 5px;
+        }
+
+        .card {
+            background: var(--card-bg);
+            border-radius: 16px;
+            padding: 15px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.03);
+        }
+
+        .controls-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-bottom: 15px;
+        }
+
+        input, select {
+            flex: 1;
+            padding: 12px;
+            font-size: 16px;
+            border: 1px solid #e5e5ea;
+            border-radius: 12px;
+            background: #fafafa;
+            appearance: none;
+            width: 100%;
+        }
+
+        button {
+            padding: 12px;
+            font-size: 15px;
+            font-weight: 600;
+            border: none;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: transform 0.1s ease;
+            text-align: center;
+        }
+
+        button:active {
+            transform: scale(0.95);
+        }
+
+        .btn-primary { background-color: var(--primary); color: white; }
+        .btn-danger { background-color: var(--danger); color: white; }
+        .btn-warning { background-color: var(--warning); color: black; }
+        .btn-icon { padding: 12px 10px; flex: 1; }
+
+        .student-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 0;
+            border-bottom: 1px solid #f0f0f0;
+            gap: 10px;
+        }
+        .student-item:last-child { border-bottom: none; }
+        
+        .student-name {
+            font-size: 17px;
+            font-weight: 500;
+        }
+
+        .student-actions {
+            display: flex;
+            gap: 6px;
+            flex-wrap: wrap;
+        }
+
+        .action-btn {
+            padding: 8px 10px;
+            font-size: 13px;
+            border-radius: 8px;
+            font-weight: 600;
+            color: white;
+            flex: 1;
+        }
+
+        .btn-present { background-color: var(--success); }
+        .btn-unexcused { background-color: var(--danger); }
+        .btn-excused { background-color: var(--warning); color: #000; }
+        .btn-edit { background-color: var(--primary); }
+        .btn-delete { background-color: #c7c7cc; }
+
+        .bottom-bar {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: rgba(255, 255, 255, 0.9);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            padding: 15px 20px calc(15px + env(safe-area-inset-bottom));
+            box-shadow: 0 -1px 10px rgba(0,0,0,0.05);
+            display: flex;
+            justify-content: center;
+            z-index: 100;
+        }
+
+        .btn-copy {
+            background-color: var(--success);
+            color: white;
+            width: 100%;
+            max-width: 400px;
+            padding: 16px;
+            font-size: 18px;
+            border-radius: 14px;
+            box-shadow: 0 4px 12px rgba(52, 199, 89, 0.3);
+        }
+
+        @media (max-width: 480px) {
+            .student-item {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            .student-actions {
+                width: 100%;
+                justify-content: space-between;
+            }
+            .action-btn {
+                padding: 10px 4px;
+                font-size: 12px;
+            }
+            .controls-row {
+                flex-direction: row; 
+            }
+            .btn-icon {
+                font-size: 13px;
+                padding: 12px 4px;
+            }
+            .full-width-mobile {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <h1>إدارة الحضور</h1>
+
+    <div class="card">
+        <div class="controls-row full-width-mobile" style="margin-bottom: 10px;">
+            <select id="classSelect" onchange="changeClass()"></select>
+        </div>
+        <div class="controls-row">
+            <button class="btn-primary btn-icon" onclick="addClass()">➕ فصل</button>
+            <button class="btn-warning btn-icon" onclick="editClass()">✏️ تعديل</button>
+            <button class="btn-danger btn-icon" onclick="deleteClass()">🗑️ حذف</button>
+        </div>
+        <div class="controls-row full-width-mobile">
+            <select id="daySelect">
+                <option value="الإثنين">الإثنين</option>
+                <option value="الثلاثاء" selected>الثلاثاء</option>
+                <option value="الأربعاء">الأربعاء</option>
+                <option value="الخميس">الخميس</option>
+                <option value="الجمعة">الجمعة</option>
+                <option value="السبت">السبت</option>
+                <option value="الأحد">الأحد</option>
+            </select>
+        </div>
+        <div class="controls-row full-width-mobile" style="margin-bottom: 0;">
+            <input type="text" id="newStudentName" placeholder="اسم التلميذ الجديد...">
+            <button class="btn-primary" onclick="addStudent()">إضافة</button>
+        </div>
+    </div>
+
+    <div class="card" id="col-present">
+        <h2>الحضور</h2>
+        <div id="list-present"></div>
+    </div>
+    
+    <div class="card" id="col-unexcused">
+        <h2>غياب بدون عذر</h2>
+        <div id="list-unexcused"></div>
+    </div>
+
+    <div class="card" id="col-excused">
+        <h2>غياب بعذر</h2>
+        <div id="list-excused"></div>
+    </div>
+
+    <div class="bottom-bar">
+        <button class="btn-copy" onclick="copyList()">📋 نسخ القائمة</button>
+    </div>
+
+    <script>
+        let appData = JSON.parse(localStorage.getItem("attendanceAppData"));
+
+        if (!appData) {
+            let oldStudents = JSON.parse(localStorage.getItem("studentsList"));
+            appData = {
+                classes: [],
+                currentClassId: null
+            };
+            
+            if (oldStudents && oldStudents.length > 0) {
+                appData.classes.push({
+                    id: Date.now(),
+                    name: "ربع يس فاقصص القصص",
+                    theme: "diamond",
+                    students: oldStudents
+                });
+            } else {
+                appData.classes.push({
+                    id: Date.now(),
+                    name: "الفصل 1",
+                    theme: "diamond",
+                    students: []
+                });
+            }
+            appData.currentClassId = appData.classes[0].id;
+            saveData();
+        }
+
+        function saveData() {
+            localStorage.setItem("attendanceAppData", JSON.stringify(appData));
+            renderUI();
+        }
+
+        function getCurrentClass() {
+            return appData.classes.find(c => c.id == appData.currentClassId) || appData.classes[0];
+        }
+
+        function addClass() {
+            const name = prompt("أدخل اسم الفصل الجديد:");
+            if (!name) return;
+            
+            const isGirls = confirm("هل هذا فصل للفتيات؟ (اضغط موافق للفتيات 🌸، أو إلغاء للذكور/مختلط 💎)");
+            const theme = isGirls ? "flower" : "diamond";
+
+            const newClass = {
+                id: Date.now(),
+                name: name,
+                theme: theme,
+                students: []
+            };
+            
+            appData.classes.push(newClass);
+            appData.currentClassId = newClass.id;
+            saveData();
+        }
+
+        function editClass() {
+            let currentClass = getCurrentClass();
+            const newName = prompt("تعديل اسم الفصل:", currentClass.name);
+            if (newName && newName.trim() !== "") {
+                currentClass.name = newName.trim();
+                saveData();
+            }
+        }
+
+        function deleteClass() {
+            if (appData.classes.length <= 1) {
+                alert("لا يمكنك حذف الفصل الوحيد المتبقي!");
+                return;
+            }
+            if (confirm("هل أنت متأكد من حذف هذا الفصل بجميع تلاميذه؟")) {
+                appData.classes = appData.classes.filter(c => c.id != appData.currentClassId);
+                appData.currentClassId = appData.classes[0].id;
+                saveData();
+            }
+        }
+
+        function changeClass() {
+            appData.currentClassId = document.getElementById("classSelect").value;
+            saveData();
+        }
+
+        function addStudent() {
+            const nameInput = document.getElementById("newStudentName");
+            const name = nameInput.value.trim();
+            if (name) {
+                let currentClass = getCurrentClass();
+                currentClass.students.push({ name: name, status: "present" });
+                nameInput.value = "";
+                saveData();
+            }
+        }
+
+        function editStudent(index) {
+            let currentClass = getCurrentClass();
+            const currentName = currentClass.students[index].name;
+            const newName = prompt("تعديل اسم التلميذ:", currentName);
+            if (newName && newName.trim() !== "") {
+                currentClass.students[index].name = newName.trim();
+                saveData();
+            }
+        }
+
+        function deleteStudent(index) {
+            if(confirm("هل أنت متأكد من الحذف؟")) {
+                getCurrentClass().students.splice(index, 1);
+                saveData();
+            }
+        }
+
+        function changeStatus(index, newStatus) {
+            getCurrentClass().students[index].status = newStatus;
+            saveData();
+        }
+
+        function renderUI() {
+            const select = document.getElementById("classSelect");
+            select.innerHTML = "";
+            appData.classes.forEach(c => {
+                const option = document.createElement("option");
+                option.value = c.id;
+                option.textContent = (c.theme === 'flower' ? '🌸 ' : '💎 ') + c.name; 
+                if (c.id == appData.currentClassId) option.selected = true;
+                select.appendChild(option);
+            });
+
+            document.getElementById("list-present").innerHTML = "";
+            document.getElementById("list-unexcused").innerHTML = "";
+            document.getElementById("list-excused").innerHTML = "";
+
+            let currentClass = getCurrentClass();
+
+            currentClass.students.forEach((student, index) => {
+                const div = document.createElement("div");
+                div.className = "student-item";
+                
+                let buttons = "";
+                if(student.status !== "present") buttons += `<button class="action-btn btn-present" onclick="changeStatus(${index}, 'present')">حضور</button>`;
+                if(student.status !== "unexcused") buttons += `<button class="action-btn btn-unexcused" onclick="changeStatus(${index}, 'unexcused')">بدون عذر</button>`;
+                if(student.status !== "excused") buttons += `<button class="action-btn btn-excused" onclick="changeStatus(${index}, 'excused')">بعذر</button>`;
+                
+                // New Edit Button
+                buttons += `<button class="action-btn btn-edit" onclick="editStudent(${index})">✏️</button>`;
+                buttons += `<button class="action-btn btn-delete" onclick="deleteStudent(${index})">🗑️</button>`;
+
+                div.innerHTML = `<span class="student-name">${student.name}</span> <div class="student-actions">${buttons}</div>`;
+                
+                document.getElementById(`list-${student.status}`).appendChild(div);
+            });
+        }
+
+        function copyList() {
+            const day = document.getElementById("daySelect").value;
+            const currentClass = getCurrentClass();
+            const icon = currentClass.theme === "flower" ? "🌸" : "💎";
+            
+            const present = currentClass.students.filter(s => s.status === "present").map(s => s.name).join("\n");
+            const unexcused = currentClass.students.filter(s => s.status === "unexcused").map(s => s.name).join("\n");
+            const excused = currentClass.students.filter(s => s.status === "excused").map(s => s.name).join("\n");
+
+            const finalText = `${icon} قائمة الحضور اليوم ${day} ${icon}\n\n${present}\n\n⛔️غيابات بدون عذر ⛔️\n\n${unexcused}\n\nغيابات بعذر\n\n${excused}`;
+
+            navigator.clipboard.writeText(finalText).then(() => {
+                alert("تم نسخ القائمة بنجاح!");
+            }).catch(err => {
+                alert("حدث خطأ أثناء النسخ.");
+            });
+        }
+
+        renderUI();
+    </script>
+</body>
+</html>
